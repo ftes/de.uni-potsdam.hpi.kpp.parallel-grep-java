@@ -1,5 +1,7 @@
 *.class
 
+archive.tar
+
 # Package Files #
 *.jar
 *.war

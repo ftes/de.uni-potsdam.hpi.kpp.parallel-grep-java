@@ -9,8 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Grep {
 	public static final String outFile = "output.txt";
@@ -68,20 +66,7 @@ public class Grep {
 
 		List<Thread> threads = new ArrayList<>();
 		for (final String searchString : searchStrings) {
-			Thread thread = new Thread() {
-				@Override
-				public void run() {
-					int occurences = 0;
-
-					Pattern p = Pattern.compile(searchString);
-					Matcher m = p.matcher(input);
-					while (m.find()) {
-						occurences += 1;
-					}
-
-					grep.writeResult(searchString, occurences);
-				}
-			};
+			Thread thread = new SearchThread(grep, searchString, input);
 			thread.start();
 			threads.add(thread);
 		}
