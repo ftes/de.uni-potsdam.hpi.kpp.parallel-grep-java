@@ -4,3 +4,8 @@
 *.jar
 *.war
 *.ear
+
+# in/out
+input.txt
+output.txt
+searchstrings.txt
