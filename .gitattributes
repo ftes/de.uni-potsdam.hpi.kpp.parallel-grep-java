@@ -1,0 +1,6 @@
+.gitattributes export-ignore
+.gitignore export-ignore
+create-archive.sh export-ignore
+README.md export-ignore
+.project export-ignore
+.classpath export-ignore
