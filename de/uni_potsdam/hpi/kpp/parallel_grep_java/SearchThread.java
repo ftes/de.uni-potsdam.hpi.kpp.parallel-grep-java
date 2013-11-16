@@ -6,12 +6,10 @@ import java.util.regex.Pattern;
 public class SearchThread extends Thread {
 	private final Grep grep;
 	private final String searchString;
-	private final String input;
 	
-	public SearchThread(Grep grep, String searchString, String input) {
+	public SearchThread(Grep grep, String searchString) {
 		this.grep = grep;
 		this.searchString = searchString;
-		this.input = input;
 	}
 	
 	@Override
@@ -19,11 +17,11 @@ public class SearchThread extends Thread {
 		int occurences = 0;
 
 		Pattern p = Pattern.compile(searchString);
-		Matcher m = p.matcher(input);
+		Matcher m = p.matcher(grep.input);
 		while (m.find()) {
 			occurences += 1;
 		}
 
-		grep.writeResult(searchString, occurences);
+		grep.writeResultAndStartNewThread(searchString, occurences);
 	}
 }

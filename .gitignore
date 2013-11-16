@@ -8,6 +8,4 @@ archive.tar
 *.ear
 
 # in/out
-input.txt
-output.txt
-searchstrings.txt
+*.txt
