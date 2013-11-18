@@ -19,7 +19,7 @@ public class SearchThread extends Thread {
 		Pattern p = Pattern.compile(searchString);
 		Matcher m = p.matcher(grep.input);
 		while (m.find()) {
-			occurences += 1;
+			occurences++;
 		}
 
 		grep.writeResultAndStartNewThread(searchString, occurences);

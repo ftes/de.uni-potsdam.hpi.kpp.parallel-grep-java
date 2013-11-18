@@ -23,17 +23,18 @@ public class Grep {
 	private final Map<String, Integer> results = new HashMap<>();
 	private boolean locked = false;
 
-	private synchronized void lockForWrite() {
+	public synchronized void lockForWrite() {
 		if (locked) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
+				System.err.println(e);
 			}
 		}
 		locked = true;
 	}
 
-	private synchronized void unlockAfterWrite() {
+	public synchronized void unlockAfterWrite() {
 		locked = false;
 		notify();
 	}
@@ -87,9 +88,8 @@ public class Grep {
 			sb.append("\n");
 		}
 		br.close();
-		final String input = sb.toString();
 
-		final Grep grep = new Grep(input);
+		final Grep grep = new Grep(sb.toString());
 
 		br = new BufferedReader(new FileReader(searchStringsFile));
 		for (String line = br.readLine(); line != null; line = br.readLine()) {
