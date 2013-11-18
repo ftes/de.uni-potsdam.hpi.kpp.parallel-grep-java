@@ -14,7 +14,7 @@ import java.util.Map.Entry;
 
 public class Grep {
 	public static final String outFile = "output.txt";
-	public static final int maxNoThreads = 20;
+	public static final int maxNoThreads = Runtime.getRuntime().availableProcessors();
 
 	public final List<String> searchStrings = new ArrayList<>();
 	public final String input;
@@ -78,6 +78,7 @@ public class Grep {
 	}
 
 	public static void main(String[] args) throws IOException {
+		System.out.println(String.format("Using %d threads", maxNoThreads));
 		String searchStringsFile = args[0];
 		String inputFile = args[1];
 
