@@ -14,16 +14,21 @@ import java.util.Map.Entry;
 
 public class Grep {
 	public static final String outFile = "output.txt";
-	public static final int maxNoThreads = Runtime.getRuntime().availableProcessors();
+	public static final int maxNoThreads = Runtime.getRuntime()
+			.availableProcessors();
 
-	public final List<String> searchStrings = new ArrayList<>();
 	public final String input;
 	private int activeThreads = 0;
+	private final Object maxThreadCondition = new Object();
 
 	private final Map<String, Integer> results = new HashMap<>();
 	private boolean locked = false;
 
-	public synchronized void lockForWrite() {
+	/**
+	 * Thread tries to obtain lock, if failing to do so it will wait outside
+	 * monitor control until notified by other thread that releases lock.
+	 */
+	private synchronized void lockForWrite() {
 		if (locked) {
 			try {
 				wait();
@@ -34,43 +39,50 @@ public class Grep {
 		locked = true;
 	}
 
-	public synchronized void unlockAfterWrite() {
+	/**
+	 * Notifies only one other thread after unlocking, as only one thread can
+	 * write at one time. If several are waiting, this notify "cascades", until
+	 * at some point all are notified.
+	 */
+	private synchronized void unlockAfterWrite() {
 		locked = false;
 		notify();
 	}
 
 	public void startSearchThread(String searchString) {
-		activeThreads++;
-		new SearchThread(this, searchString).start();
+		synchronized (maxThreadCondition) {
+			if (activeThreads >= maxNoThreads) {
+				try {
+					maxThreadCondition.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			activeThreads++;
+			new SearchThread(this, searchString).start();
+		}
 	}
 
-	public void writeResultAndStartNewThread(String searchString, int occurences) {
-		lockForWrite();
-		results.put(searchString, occurences);
-		activeThreads--;
-
-		if (!searchStrings.isEmpty()) {
-			searchString = searchStrings.get(0);
-			searchStrings.remove(0);
-			startSearchThread(searchString);
-		} else if (activeThreads == 0) {
-			//write result
-			PrintWriter out;
-			try {
-				out = new PrintWriter(outFile);
-				for (Entry<String, Integer> result : results.entrySet()) {
-					out.println(result.getKey() + ";" + result.getValue());
+	public void waitForThreadsToFinish() {
+		synchronized (maxThreadCondition) {
+			while (activeThreads > 0) {
+				try {
+					maxThreadCondition.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-				out.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
 			}
 		}
-		unlockAfterWrite();
 	}
 
-	public Map<String, Integer> getResults() {
-		return results;
+	public void writeResult(String searchString, int occurences) {
+		lockForWrite();
+		results.put(searchString, occurences);
+		unlockAfterWrite();
+		synchronized (maxThreadCondition) {
+			activeThreads--;
+			maxThreadCondition.notify();
+		}
 	}
 
 	public Grep(String input) {
@@ -91,22 +103,32 @@ public class Grep {
 		br.close();
 
 		final Grep grep = new Grep(sb.toString());
+		List<String> searchStrings = new ArrayList<>();
 
 		br = new BufferedReader(new FileReader(searchStringsFile));
 		for (String line = br.readLine(); line != null; line = br.readLine()) {
-			grep.searchStrings.add(line);
+			searchStrings.add(line);
 		}
 		br.close();
 
-		Iterator<String> iter = grep.searchStrings.iterator();
-		int n = 0;
-		grep.lockForWrite();
-		while (n < maxNoThreads && iter.hasNext()) {
+		Iterator<String> iter = searchStrings.iterator();
+		while (iter.hasNext()) {
 			String searchString = iter.next();
 			iter.remove();
-			n++;
 			grep.startSearchThread(searchString);
 		}
-		grep.unlockAfterWrite();
+		
+		grep.waitForThreadsToFinish();
+
+		PrintWriter out;
+		try {
+			out = new PrintWriter(outFile);
+			for (Entry<String, Integer> result : grep.results.entrySet()) {
+				out.println(result.getKey() + ";" + result.getValue());
+			}
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 }

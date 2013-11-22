@@ -12,6 +12,11 @@ public class SearchThread extends Thread {
 		this.searchString = searchString;
 	}
 	
+	/**
+	 * aka lookforit()
+	 * in the last step, the thread releases monitor control within the synchronized {@link Grep#lockForWrite()}
+	 * method, if the result data structure is currently being accessed
+	 */
 	@Override
 	public void run() {
 		int occurences = 0;
@@ -22,6 +27,7 @@ public class SearchThread extends Thread {
 			occurences++;
 		}
 
-		grep.writeResultAndStartNewThread(searchString, occurences);
+		// in this step, the thread releases monitor control within the synchronized {@link Grep#lock()}
+		grep.writeResult(searchString, occurences);
 	}
 }
